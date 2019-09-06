@@ -64,19 +64,21 @@
 (defvar nose--last-run-params nil
   "Stores the last parameters passed to run-nose")
 
-(defun run-nose (&optional tests suite debug failed)
+(defun run-nose (&optional tests suite debug failed focused)
   "run nosetests by calling python instead of nosetests script.
 To be able to debug on Windows platform python output must be not buffered.
 For more details: http://pswinkels.blogspot.ca/2010/04/debugging-python-code-from-within-emacs.html
 "
-  (setq nose--last-run-params (list tests suite debug failed))
+  (setq nose--last-run-params (list tests suite debug failed focused))
   (let* ((nose (nosetests-nose-command))
          (where (nose-find-project-root))
          (args (concat (if debug "--pdb" "")
                        " "
                        (if failed "--failed" "")
                        " "
-                       (if suite "--test-suite-func=load_tests" "")))
+                       (if suite "--test-suite-func=load_tests" "")
+                       " "
+                       (if focused "-s --nologcapture" "")))
          (tnames (if tests tests "")))
     (if (not where)
         (error
@@ -91,7 +93,7 @@ For more details: http://pswinkels.blogspot.ca/2010/04/debugging-python-code-fro
              (format
               (concat "%s "
                       (if nose-use-verbose "-v " "")
-                      "%s -s -w \"%s\" -c \"%ssetup.cfg\" \"%s\"")
+                      "%s -w \"%s\" -c \"%ssetup.cfg\" \"%s\"")
               nose args where where tnames)))
   )
 
@@ -143,7 +145,7 @@ For more details: http://pswinkels.blogspot.ca/2010/04/debugging-python-code-fro
   "run nosetests (via eggs/bin/test) on testable thing
  at point in current buffer"
   (interactive)
-  (run-nose (format "%s:%s" buffer-file-name (nose-py-testable)) nil debug))
+  (run-nose (format "%s:%s" buffer-file-name (nose-py-testable)) nil debug nil t))
 
 (defun nosetests-pdb-one ()
   (interactive)

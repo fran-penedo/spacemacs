@@ -9,21 +9,32 @@
 ;;
 ;;; License: GPLv3
 
-(defun spacemacs//go-set-tab-width ()
-  "Set the tab width."
-  (when go-tab-width
-    (setq-local tab-width go-tab-width)))
+(defun spacemacs//go-backend ()
+  "Returns selected backend."
+  (if go-backend
+      go-backend
+    (cond
+     ((configuration-layer/layer-used-p 'lsp) 'lsp)
+     (t 'go-mode))))
 
 (defun spacemacs//go-setup-backend ()
   "Conditionally setup go backend"
-  (pcase go-backend
+  (pcase (spacemacs//go-backend)
     ('lsp (spacemacs//go-setup-backend-lsp))))
 
 (defun spacemacs//go-setup-company ()
   "Conditionally setup go company based on backend"
-  (pcase go-backend
+  (pcase (spacemacs//go-backend)
     ('go-mode (spacemacs//go-setup-company-go))
     ('lsp (spacemacs//go-setup-company-lsp))))
+
+(defun spacemacs//go-setup-eldoc ()
+  "Conditionally setup go eldoc based on backend"
+  (pcase (spacemacs//go-backend)
+    ('go-mode (go-eldoc-setup))))
+
+
+;; go-mode
 
 (defun spacemacs//go-setup-company-go ()
   (spacemacs|add-company-backends
@@ -33,6 +44,9 @@
     :append-hooks nil
     :call-hooks t)
   (company-mode))
+
+
+;; lsp
 
 (defun spacemacs//go-setup-backend-lsp ()
   "Setup lsp backend"
@@ -58,6 +72,9 @@
         (company-mode))
     (message "`lsp' layer is not installed, please add `lsp' layer to your dotfile.")))
 
+
+;; flycheck
+
 (defun spacemacs//go-enable-flycheck-golangci-lint ()
   "Enable `flycheck-golangci-linter' and disable overlapping `flycheck' linters."
   (setq flycheck-disabled-checkers '(go-gofmt
@@ -65,8 +82,14 @@
                                      go-vet
                                      go-build
                                      go-test
-                                     go-errcheck))
+                                     go-errcheck
+                                     go-staticcheck
+                                     go-unconvert
+                                     ))
   (flycheck-golangci-lint-setup))
+
+
+;; run
 
 (defun spacemacs/go-run-tests (args)
   (interactive)
@@ -88,8 +111,8 @@
         (re-search-backward "^func[ ]+\\(([[:alnum:]]*?[ ]?[*]?\\([[:alnum:]]+\\))[ ]+\\)?\\(Test[[:alnum:]_]+\\)(.*)")
         (spacemacs/go-run-tests
          (cond (go-use-testify-for-testing (concat "-run='Test" (match-string-no-properties 2) "' -testify.m='" (match-string-no-properties 3) "'"))
-               (go-use-gocheck-for-testing (concat "-check.f='" (match-string-no-properties 2) "$'"))
-               (t (concat "-run='" (match-string-no-properties 2) "$'")))))
+               (go-use-gocheck-for-testing (concat "-check.f='" (match-string-no-properties 3) "$'"))
+               (t (concat "-run='" (match-string-no-properties 3) "$'")))))
     (message "Must be in a _test.go file to run go-run-test-current-function")))
 
 (defun spacemacs/go-run-test-current-suite ()
@@ -113,6 +136,14 @@
                                      (buffer-file-name (buffer-base-buffer))))
            go-run-args)))
 
+
+;; misc
+
 (defun spacemacs/go-packages-gopkgs ()
   "Return a list of all Go packages, using `gopkgs'."
   (sort (process-lines "gopkgs") #'string<))
+
+(defun spacemacs//go-set-tab-width ()
+  "Set the tab width."
+  (when go-tab-width
+    (setq-local tab-width go-tab-width)))

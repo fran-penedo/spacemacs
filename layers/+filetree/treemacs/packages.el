@@ -1,8 +1,9 @@
 ;;; packages.el --- treemacs Layer packages File for Spacemacs
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2019 Sylvain Benner & Contributors
 ;;
 ;; Author: Alexander Miller <alexanderm@web.de>
+;;         Hong Xu <hong@topbug.net>
 ;; URL: https://github.com/syl20bnr/spacemacs
 ;;
 ;; This file is not part of GNU Emacs.
@@ -14,6 +15,8 @@
     golden-ratio
     treemacs
     (treemacs-evil :toggle (memq dotspacemacs-editing-style '(vim hybrid)))
+    (treemacs-magit :requires magit)
+    (treemacs-persp :requires persp-mode)
     treemacs-projectile
     winum
     ))
@@ -26,23 +29,14 @@
 
 (defun treemacs/init-treemacs ()
   (use-package treemacs
-    :commands (treemacs-select-window treemacs--window-number-ten
+    :commands (treemacs-select-window
+               treemacs-select-scope-type
+               treemacs--window-number-ten
                treemacs-current-visibility)
     :defer t
     :init
     (progn
-      (setq treemacs-follow-after-init t
-            treemacs-width 35
-            treemacs-position 'left
-            treemacs-is-never-other-window nil
-            treemacs-silent-refresh nil
-            treemacs-indentation 2
-            treemacs-change-root-without-asking nil
-            treemacs-sorting 'alphabetic-desc
-            treemacs-show-hidden-files t
-            treemacs-never-persist nil
-            treemacs-goto-tag-strategy 'refetch-index
-            treemacs-collapse-dirs treemacs-use-collapsed-directories)
+      (setq treemacs-follow-after-init t)
       (add-hook 'treemacs-mode-hook
                 #'spacemacs/treemacs-setup-width-lock)
       (spacemacs/set-leader-keys
@@ -62,12 +56,20 @@
     :config
     (progn
       (spacemacs/define-evil-state-face "treemacs" "MediumPurple1")
-      (when treemacs-use-follow-mode
-        (treemacs-follow-mode t))
-      (when treemacs-use-filewatch-mode
-        (treemacs-filewatch-mode t))
-      (when (memq treemacs-use-git-mode '(simple extended deferred))
-        (treemacs-git-mode treemacs-use-git-mode))
+      ;; minor modes are enabled by default, so they must be explicitly
+      ;; turned off
+      (if (eq treemacs-use-follow-mode t)
+          (treemacs-follow-mode t)
+        (treemacs-follow-mode -1))
+      (if (eq treemacs-use-follow-mode 'tag)
+          (treemacs-tag-follow-mode t)
+        (treemacs-tag-follow-mode -1))
+      (if treemacs-use-filewatch-mode
+          (treemacs-filewatch-mode t)
+        (treemacs-filewatch-mode -1))
+      (if (memq treemacs-use-git-mode '(simple extended deferred))
+          (treemacs-git-mode treemacs-use-git-mode)
+        (treemacs-git-mode -1))
       (add-to-list 'spacemacs-window-split-ignore-prefixes
                    treemacs--buffer-name-prefix))))
 
@@ -81,6 +83,9 @@
     :after treemacs
     :defer t
     :init (require 'treemacs-projectile)))
+
+(defun treemacs/init-treemacs-persp ()
+  (use-package treemacs-persp :after treemacs))
 
 (defun treemacs/pre-init-winum ()
   (spacemacs|use-package-add-hook winum
@@ -98,3 +103,8 @@
           (add-to-list 'winum-ignored-buffers
                        (format "%sFramebuffer-%s*"
                                treemacs--buffer-name-prefix n)))))))
+
+(defun treemacs/init-treemacs-magit ()
+  (use-package treemacs-magit
+    :after treemacs magit
+    :defer t))

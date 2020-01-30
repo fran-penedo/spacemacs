@@ -1,4 +1,4 @@
-;;; funcs.el --- Spacemacs Layouts Layer functions File
+;;; funcs.el --- Spacemacs Layouts Layer functions File -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
 ;;
@@ -104,8 +104,8 @@ Cancels autosave on exiting perspectives mode."
 (defun spacemacs//layouts-ts-toggle-hint ()
   "Toggle the full hint docstring for the layouts transient-state."
   (interactive)
-  (setq spacemacs--ts-full-hint-toggle
-        (logxor spacemacs--ts-full-hint-toggle 1)))
+  (setq spacemacs--layouts-ts-full-hint-toggle
+        (not spacemacs--layouts-ts-full-hint-toggle)))
 
 (defun spacemacs//layout-format-name (name pos)
   "Format the layout name given by NAME for display in mode-line."
@@ -132,7 +132,7 @@ Cancels autosave on exiting perspectives mode."
                              persp-list " | "))))
     (concat
      formatted-persp-list
-     (if (equal 1 spacemacs--ts-full-hint-toggle)
+     (if spacemacs--layouts-ts-full-hint-toggle
          spacemacs--layouts-ts-full-hint
        (concat "  (["
                (propertize "?" 'face 'hydra-face-red)
@@ -200,7 +200,10 @@ ask the user if a new layout should be created."
 
 (defun spacemacs/layouts-ts-close-other ()
   (interactive)
-  (call-interactively 'spacemacs/helm-persp-close)
+  (cond ((configuration-layer/layer-used-p 'helm)
+         (spacemacs/helm-persp-close))
+        ((configuration-layer/layer-used-p 'ivy)
+         (spacemacs/ivy-spacemacs-layout-close-other)))
   (spacemacs/layouts-transient-state/body))
 
 (defun spacemacs/layouts-ts-kill ()
@@ -490,6 +493,18 @@ perspectives does."
                                     (persp-kill-without-buffers project)))))
       (projectile-switch-project-by-name project))))
 
+(defun spacemacs//helm-persp-switch-project-action-maker (project-action)
+  "Make persistent actions for `spacemacs/helm-persp-switch-project'.
+Run PROJECT-ACTION on project."
+  (lambda (project)
+    (spacemacs||switch-project-persp project
+      (let ((projectile-completion-system 'helm)
+            (projectile-switch-project-action project-action)
+            (helm-quit-hook (append helm-quit-hook
+                                    (lambda ()
+                                      (persp-kill-without-buffers project)))))
+        (projectile-switch-project-by-name project)))))
+
 (defun spacemacs/helm-persp-switch-project (arg)
   "Select a project layout using Helm."
   (interactive "P")
@@ -503,8 +518,25 @@ perspectives does."
                projectile-known-projects))
      :fuzzy-match helm-projectile-fuzzy-match
      :mode-line helm-read-file-name-mode-line-string
-     :action '(("Switch to Project Perspective" .
-                spacemacs//helm-persp-switch-project-action)))
+     :keymap (let ((map (make-sparse-keymap)))
+               (define-key map
+                 (kbd "C-d") #'(lambda () (interactive)
+                                 (helm-exit-and-execute-action
+                                  (lambda (project)
+                                    (spacemacs||switch-project-persp project
+                                      (dired project))))))
+               map)
+     :action `(("Switch to Project Perspective" .
+                spacemacs//helm-persp-switch-project-action)
+               ("Switch to Project Perspective and Open Dired `C-d'" .
+                ,(spacemacs//helm-persp-switch-project-action-maker
+                  (lambda () (dired "."))))
+               ("Switch to Project Perspective and Show Recent Files" .
+                ,(spacemacs//helm-persp-switch-project-action-maker
+                  'helm-projectile-recentf))
+               ("Switch to Project Perspective and Search" .
+                ,(spacemacs//helm-persp-switch-project-action-maker
+                  'spacemacs/helm-project-smart-do-search))))
    :buffer "*Helm Projectile Layouts*"))
 
 
@@ -525,6 +557,11 @@ perspectives does."
               projectile-known-projects)
             :action #'spacemacs//ivy-persp-switch-project-action
             :caller 'spacemacs/ivy-persp-switch-project))
+
+(defun spacemacs/ivy-switch-project-open-dired (project)
+  (interactive)
+  (spacemacs||switch-project-persp project
+    (dired project)))
 
 
 ;; Eyebrowse
@@ -572,6 +609,7 @@ WINDOW is the representation of a window in a window-state object."
   "Execute FN once for each window in STATE and make a list of the results.
 FN is a function to execute.
 STATE is a window-state object."
+  (defvar result) ;; use dynamic binding
   (let (result)
     (spacemacs/window-state-walk-windows-1 (cdr state) fn)
     result))
@@ -628,11 +666,17 @@ STATE is a window-state object as returned by `window-state-get'."
 
 ;; Eyebrowse transient state
 
+(defun spacemacs/single-win-workspace ()
+  "Create a new single window workspace, and show the Spacemacs home buffer."
+  (interactive)
+  (let ((eyebrowse-new-workspace 'spacemacs/home))
+    (eyebrowse-create-window-config)))
+
 (defun spacemacs//workspaces-ts-toggle-hint ()
   "Toggle the full hint docstring for the workspaces transient-state."
   (interactive)
-  (setq spacemacs--ts-full-hint-toggle
-        (logxor spacemacs--ts-full-hint-toggle 1)))
+  (setq spacemacs--workspaces-ts-full-hint-toggle
+        (not spacemacs--workspaces-ts-full-hint-toggle)))
 
 (defun spacemacs/workspaces-ts-rename ()
   "Rename a workspace and get back to transient-state."
@@ -658,7 +702,7 @@ STATE is a window-state object as returned by `window-state-get'."
    " "
    (mapconcat 'spacemacs//workspace-format-name
               (eyebrowse--get 'window-configs) " | ")
-   (if (equal 1 spacemacs--ts-full-hint-toggle)
+   (if spacemacs--workspaces-ts-full-hint-toggle
        spacemacs--workspaces-ts-full-hint
      (concat "  (["
              (propertize "?" 'face 'hydra-face-red)

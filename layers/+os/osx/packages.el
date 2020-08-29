@@ -1,4 +1,4 @@
-;;; config.el --- OSX Layer packages File for Spacemacs
+;;; packages.el --- OSX Layer packages File for Spacemacs
 ;;
 ;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
 ;;
@@ -9,39 +9,30 @@
 ;;
 ;;; License: GPLv3
 
-(defconst osx-packages
-  '(
-    exec-path-from-shell
-    helm
-    launchctl
-    (osx-dictionary :toggle osx-use-dictionary-app)
-    osx-trash
-    osx-clipboard
-    reveal-in-osx-finder
-    term
-    ))
+(setq osx-packages
+      '(
+        helm
+        launchctl
+        (osx-dictionary :toggle osx-use-dictionary-app)
+        osx-trash
+        osx-clipboard
+        reveal-in-osx-finder
+        term
+        ))
 
 (when (spacemacs/system-is-mac)
   ;; Enable built-in trash support via finder API if available (only on Emacs
   ;; macOS Port)
   (when (boundp 'mac-system-move-file-to-trash-use-finder)
-    (setq mac-system-move-file-to-trash-use-finder t)))
+    (setq mac-system-move-file-to-trash-use-finder t))
 
-(defun osx/init-exec-path-from-shell ()
-  (use-package exec-path-from-shell
-    :if (spacemacs/system-is-mac)
-    :config
-    (progn
-      (exec-path-from-shell-initialize)
-      (when (spacemacs/system-is-mac)
-        ;; Use GNU ls as `gls' from `coreutils' if available.  Add `(setq
-        ;; dired-use-ls-dired nil)' to your config to suppress the Dired warning when
-        ;; not using GNU ls.  We must look for `gls' after `exec-path-from-shell' was
-        ;; initialized to make sure that `gls' is in `exec-path'
-        (let ((gls (executable-find "gls")))
-          (when gls
-            (setq insert-directory-program gls
-                  dired-listing-switches "-aBhl --group-directories-first")))))))
+  ;; Use GNU ls as `gls' from `coreutils' if available.  Add `(setq
+  ;; dired-use-ls-dired nil)' to your config to suppress the Dired warning when
+  ;; not using GNU ls.
+  (let ((gls (executable-find "gls")))
+    (when gls
+      (setq insert-directory-program gls
+            dired-listing-switches "-aBhl --group-directories-first"))))
 
 (defun osx/pre-init-helm ()
   ;; Use `mdfind' instead of `locate'.
@@ -116,13 +107,13 @@
     :init
     (progn
       (setq interprogram-cut-function '(lambda (text &rest ignore)
-                                         (if (display-graphic-p)
-                                             (gui-select-text text)
-                                           (osx-clipboard-cut-function text)))
+                                        (if (display-graphic-p)
+                                            (gui-select-text text)
+                                          (osx-clipboard-cut-function text)))
             interprogram-paste-function '(lambda ()
-                                           (if (display-graphic-p)
-                                               (gui-selection-value)
-                                             (osx-clipboard-paste-function)))))))
+                                          (if (display-graphic-p)
+                                              (gui-selection-value)
+                                            (osx-clipboard-paste-function)))))))
 
 (defun osx/init-reveal-in-osx-finder ()
   (use-package reveal-in-osx-finder

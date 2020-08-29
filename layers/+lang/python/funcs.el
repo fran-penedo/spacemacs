@@ -35,8 +35,7 @@
 (defun spacemacs//python-setup-company ()
   "Conditionally setup company based on backend."
   (pcase (spacemacs//python-backend)
-    (`anaconda (spacemacs//python-setup-anaconda-company))
-    (`lsp (spacemacs//python-setup-lsp-company))))
+    (`anaconda (spacemacs//python-setup-anaconda-company))))
 
 (defun spacemacs//python-setup-dap ()
   "Conditionally setup elixir DAP integration."
@@ -87,18 +86,6 @@
         (when (eq python-lsp-server 'mspyls)
           (require 'lsp-python-ms))
         (lsp))
-    (message "`lsp' layer is not installed, please add `lsp' layer to your dotfile.")))
-
-(defun spacemacs//python-setup-lsp-company ()
-  "Setup lsp auto-completion."
-  (if (configuration-layer/layer-used-p 'lsp)
-      (progn
-        (spacemacs|add-company-backends
-          :backends company-lsp
-          :modes python-mode
-          :append-hooks nil
-          :call-hooks t)
-        (company-mode))
     (message "`lsp' layer is not installed, please add `lsp' layer to your dotfile.")))
 
 (defun spacemacs//python-setup-lsp-dap ()
@@ -303,7 +290,18 @@ to be called for each testrunner. "
 (defun spacemacs/python-test-last (arg)
   "Re-run the last test command"
   (interactive "P")
-  (spacemacs//python-call-correct-test-function arg '((nose . nosetests-again))))
+  (spacemacs//python-call-correct-test-function arg '((pytest . pytest-again)
+                                                      (nose . nosetests-again))))
+
+(defun spacemacs/python-test-last-failed (arg)
+  "Re-run the tests that last failed."
+  (interactive "P")
+  (spacemacs//python-call-correct-test-function arg '((pytest . pytest-last-failed))))
+
+(defun spacemacs/python-test-pdb-last-failed (arg)
+  "Re-run the tests that last failed in debug mode."
+  (interactive "P")
+  (spacemacs//python-call-correct-test-function arg '((pytest . pytest-pdb-last-failed))))
 
 (defun spacemacs/python-test-all (arg)
   "Run all tests."
@@ -362,6 +360,8 @@ to be called for each testrunner. "
     "tB" 'spacemacs/python-test-pdb-module
     "tb" 'spacemacs/python-test-module
     "tl" 'spacemacs/python-test-last
+    "tf" 'spacemacs/python-test-last-failed
+    "tF" 'spacemacs/python-test-pdb-last-failed
     "tT" 'spacemacs/python-test-pdb-one
     "tt" 'spacemacs/python-test-one
     "tM" 'spacemacs/python-test-pdb-module

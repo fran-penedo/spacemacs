@@ -322,8 +322,8 @@ MIN-WIDTH is the minimal width of the frame, frame included.  The frame will not
             min-width (or min-width 1)
             max-width (if (< max-width min-width) min-width max-width)
             max-width (if (> max-width spacemacs-buffer--window-width)
-                              spacemacs-buffer--window-width
-                            max-width))
+                          spacemacs-buffer--window-width
+                        max-width))
       (when (< width min-width)
         (setq width min-width
               fill-column (max 0 (- min-width 2 (* hpadding 2)))))
@@ -391,7 +391,7 @@ ADDITIONAL-WIDGETS: a function for inserting a widget under the frame."
             (beginning-of-line)
             (insert (make-string padding ?\s))
             (forward-line))))
-     (save-excursion
+      (save-excursion
         (while (re-search-backward "\\[\\[\\(.*\\)\\]\\]" nil t)
           (make-text-button (match-beginning 1)
                             (match-end 1)
@@ -766,11 +766,11 @@ TYPES: list of `org-mode' types to fetch."
   (let ((date (calendar-gregorian-from-absolute (org-today))))
     (apply #'append
            (cl-loop for file in (org-agenda-files nil 'ifmode)
-                 collect
-                 (spacemacs-buffer//make-org-items
-                  file
-                  (apply 'org-agenda-get-day-entries file date
-                         types))))))
+                    collect
+                    (spacemacs-buffer//make-org-items
+                     file
+                     (apply 'org-agenda-get-day-entries file date
+                            types))))))
 
 (defun spacemacs-buffer//agenda-list ()
   "Return today's agenda."
@@ -851,8 +851,10 @@ LIST: list of `org-agenda' entries in the todo list."
                            :button-suffix ""
                            :format "%[%t%]"
                            (format "%s %s %s"
-                                   (abbreviate-file-name
-                                    (cdr (assoc "file" el)))
+                                   (let ((filename (cdr (assoc "file" el))))
+                                     (if dotspacemacs-home-shorten-agenda-source
+                                         (file-name-nondirectory filename)
+                                       (abbreviate-file-name filename)))
                                    (if (not (eq "" (cdr (assoc "time" el))))
                                        (format "- %s -"
                                                (cdr (assoc "time" el)))
@@ -1008,7 +1010,9 @@ SEQ, START and END are the same arguments as for `cl-subseq'"
 
 (defun spacemacs-buffer/goto-buffer (&optional refresh)
   "Create the special buffer for `spacemacs-buffer-mode' and switch to it.
-REFRESH if the buffer should be redrawn."
+REFRESH if the buffer should be redrawn.
+
+If a prefix argument is given, switch to it in an other, possibly new window."
   (interactive)
   (let ((buffer-exists (buffer-live-p (get-buffer spacemacs-buffer-name)))
         (save-line nil))
@@ -1029,7 +1033,10 @@ REFRESH if the buffer should be redrawn."
             (let ((inhibit-read-only t))
               (erase-buffer)))
           (spacemacs-buffer/set-mode-line "")
-          (spacemacs-buffer//insert-version)
+          (if dotspacemacs-startup-buffer-show-version
+              (spacemacs-buffer//insert-version)
+            (let ((inhibit-read-only t))
+              (insert "\n")))
           (spacemacs-buffer/insert-banner-and-buttons)
           (when (bound-and-true-p spacemacs-initialized)
             (spacemacs-buffer//notes-redisplay-current-note)
@@ -1045,7 +1052,9 @@ REFRESH if the buffer should be redrawn."
                    (forward-line (1- save-line))
                    (forward-to-indentation 0))
           (spacemacs-buffer/goto-link-line)))
-      (switch-to-buffer spacemacs-buffer-name)
+      (if current-prefix-arg
+          (switch-to-buffer-other-window spacemacs-buffer-name)
+        (switch-to-buffer spacemacs-buffer-name))
       (spacemacs//redisplay))))
 
 (add-hook 'window-setup-hook
@@ -1065,13 +1074,13 @@ REFRESH if the buffer should be redrawn."
                                treemacs-bookmark
                                treemacs-find-file
                                treemacs-select-window))
-   (let ((home-buffer (get-buffer-window spacemacs-buffer-name))
-         (frame-win (frame-selected-window)))
-     (when (and dotspacemacs-startup-buffer-responsive
-                home-buffer
-                (not (window-minibuffer-p frame-win)))
-       (with-selected-window home-buffer
-         (spacemacs-buffer/goto-buffer))))))
+    (let ((home-buffer (get-buffer-window spacemacs-buffer-name))
+          (frame-win (frame-selected-window)))
+      (when (and dotspacemacs-startup-buffer-responsive
+                 home-buffer
+                 (not (window-minibuffer-p frame-win)))
+        (with-selected-window home-buffer
+          (spacemacs-buffer/goto-buffer))))))
 
 (defun spacemacs-buffer/refresh ()
   "Force recreation of the spacemacs buffer."

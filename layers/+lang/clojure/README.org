@@ -487,6 +487,7 @@ Evaluate Clojure code in the source code buffer
 |---------------+-------------------------------------------------------------------|
 | ~SPC m e ;~   | eval sexp and show result as comment                              |
 | ~SPC m e $~   | go to end of line and eval last sexp                              |
+| ~SPC m e (~   | eval 'list' around point (sequence, list, vector, map, set)       |
 | ~SPC m e b~   | eval buffer                                                       |
 | ~SPC m e e~   | eval last sexp                                                    |
 | ~SPC m e f~   | eval function at point                                            |
@@ -598,7 +599,11 @@ TODO: separate clojure-mode and sayid key bindings
 | ~SPC m d t p~ | trace namespaces by regex                          |
 | ~SPC m d t r~ | remove trace on function                           |
 | ~SPC m d t y~ | recursively trace every namespace in given dir     |
-| ~SPC m d v~   | inspect expression at point                        |
+| ~SPC m d v e~ | inspect last expression                            |
+| ~SPC m d v f~ | inspect function at point                          |
+| ~SPC m d v i~ | inspect value at point (=cider-inspect=)           |
+| ~SPC m d v l~ | inspect last result                                |
+| ~SPC m d v v~ | inspect expression at point                        |
 | ~SPC m d V~   | set the view                                       |
 | ~SPC m d w~   | open sayid workspace window                        |
 | ~SPC m d x~   | clear workspace traces and log                     |

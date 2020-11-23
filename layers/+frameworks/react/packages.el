@@ -1,6 +1,6 @@
 ;;; packages.el --- react layer packages file for Spacemacs. -*- lexical-binding: t -*-
 ;;
-;; Copyright (c) 2012-2018 Sylvain Benner & Contributors
+;; Copyright (c) 2012-2020 Sylvain Benner & Contributors
 ;;
 ;; Author: Andrea Moretti <axyzxp@gmail.com>
 ;; URL: https://github.com/axyz
@@ -22,7 +22,6 @@
     rjsx-mode
     smartparens
     tern
-    tide
     web-beautify
     yasnippet
     ))
@@ -103,10 +102,6 @@
 
 (defun react/post-init-tern ()
   (add-to-list 'tern--key-bindings-modes 'rjsx-mode))
-
-(defun react/post-init-tide ()
-  (when (eq (spacemacs//typescript-backend) `tide)
-    (add-to-list 'tide-managed-modes 'rjsx-mode)))
 
 (defun react/pre-init-web-beautify ()
   (when (eq javascript-fmt-tool 'web-beautify)

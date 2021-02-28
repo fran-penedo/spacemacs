@@ -10,10 +10,26 @@
 ;;; License: GPLv3
 
 (defconst eaf-packages
-  '((eaf :location (recipe
+  '(ctable
+    deferred
+    epc
+    ;; s
+    (eaf :location (recipe
                     :fetcher github
                     :repo  "manateelazycat/emacs-application-framework"
                     :files ("*")))))
+
+(defun eaf/init-ctable ()
+  (use-package ctable))
+
+(defun eaf/init-deferred ()
+  (use-package deferred))
+
+(defun eaf/init-epc ()
+  (use-package epc))
+
+;; (defun eaf/init-s ()
+;;   (use-package s))
 
 (defun eaf/init-eaf ()
   (use-package eaf
@@ -60,7 +76,7 @@
               ("M-D" . "select_text")
               ("M-s" . "open_link")
               ("M-S" . "open_link_new_buffer")
-              ("M-d" . "open_link_background_buffer")
+              ("M-B" . "open_link_background_buffer")
               ("C-/" . "undo_action")
               ("M-_" . "redo_action")
               ("M-w" . "copy_text")
@@ -77,6 +93,7 @@
               ("M->" . "scroll_to_bottom")
               ("M-p" . "duplicate_page")
               ("M-t" . "new_blank_page")
+              ("M-d" . "toggle_dark_mode")
               ("<" . "insert_or_select_left_tab")
               (">" . "insert_or_select_right_tab")
               ("j" . "insert_or_scroll_up")
@@ -114,8 +131,8 @@
               ("2" . "insert_or_save_as_single_file")
               ("v" . "insert_or_view_source")
               ("e" . "insert_or_edit_url")
-              ("M-C" . "copy_code")
-              ("C-M-f" . "copy_link")
+              ("C-M-c" . "copy_code")
+              ("C-M-l" . "copy_link")
               ("C-a" . "select_all_or_input_text")
               ("M-u" . "clear_focus")
               ("C-j" . "open_downloads_setting")
@@ -199,16 +216,24 @@
     :after eaf
     :config
     (progn
-      (setq eaf-evil-leader-keymap  spacemacs-cmds)
+      ;; the following line are taken from the evil-integration example:
+      ;; https://github.com/manateelazycat/emacs-application-framework/wiki/Evil
+      (setq eaf-evil-leader-keymap spacemacs-cmds) 
 
       (define-key key-translation-map (kbd "SPC")
         (lambda (prompt)
           (if (derived-mode-p 'eaf-mode)
-              (if (and (string= eaf--buffer-app-name "browser")
-                       (eaf-call "call_function" eaf--buffer-id "is_focus"))
-                  (kbd "SPC")
-                (kbd "C-SPC")))))
+              (pcase eaf--buffer-app-name
+                ("browser" (if (string= (eaf-call-sync "call_function" eaf--buffer-id "is_focus") "True")
+                               (kbd "SPC")
+                             (kbd eaf-evil-leader-key)))
+                ("pdf-viewer" (kbd eaf-evil-leader-key))
+                ("image-viewer" (kbd eaf-evil-leader-key))
+                (_  (kbd "SPC")))
+            (kbd "SPC"))))
 
+      ;; The following lines create the major-mode leader key emulation map
+      ;; in a similar way as how it was done in the evil-integration example
       (setq eaf-evil-leader-for-major-keymap (make-sparse-keymap))
       (define-key eaf-evil-leader-for-major-keymap (kbd "h") 'eaf-open-browser-with-history)
       (define-key eaf-evil-leader-for-major-keymap (kbd "d") 'eaf-toggle-dark-mode)
@@ -217,13 +242,10 @@
                 (lambda ()
                   (when (derived-mode-p 'eaf-mode)
                     (define-key eaf-mode-map (kbd "C-,") eaf-evil-leader-for-major-keymap))))
-      ;; (setq emulation-mode-map-alists
-      ;;       (delq 'evil-mode-map-alist emulation-mode-map-alists))
 
       (define-key key-translation-map (kbd ",")
         (lambda (prompt)
           (if (derived-mode-p 'eaf-mode)
-              (if (and (string= eaf--buffer-app-name "browser")
-                       (eaf-call "call_function" eaf--buffer-id "is_focus"))
+              (if (string= (eaf-call-sync "call_function" eaf--buffer-id "is_focus") "True")
                   (kbd ",")
                 (kbd "C-,"))))))))
